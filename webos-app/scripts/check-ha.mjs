@@ -1,20 +1,26 @@
-// Checks .env against the real Home Assistant before installing on the TV:
+// Checks the real Home Assistant before installing on the TV:
 // token, camera entity, and that an MJPEG stream URL can be signed and returns data.
-//   node scripts/check-ha.mjs
-import { readFileSync } from 'node:fs';
+// Supply HA_TOKEN only as an environment variable; never put it in .env.
+//   HA_TOKEN=... node scripts/check-ha.mjs
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const env = Object.fromEntries(readFileSync(join(root, '.env'), 'utf8').split(/\r?\n/)
+const envPath = join(root, '.env');
+const env = Object.fromEntries((existsSync(envPath) ? readFileSync(envPath, 'utf8') : '').split(/\r?\n/)
   .map((l) => l.match(/^\s*([A-Z_]+)\s*=\s*(.*?)\s*$/)).filter(Boolean)
   .map((m) => [m[1], m[2].replace(/^(['"])(.*)\1$/, '$2')]));
 
 const base = (env.HA_URL || '').replace(/\/+$/, '');
 const camera = env.HA_CAMERA;
-if (!base || !env.HA_TOKEN || !camera) {
-  console.error('HA_URL, HA_TOKEN and HA_CAMERA must be set in .env');
+if (env.HA_TOKEN) {
+  console.error('Remove HA_TOKEN from .env; provide it only as an environment variable');
+  process.exit(1);
+}
+if (!base || !process.env.HA_TOKEN || !camera) {
+  console.error('Set HA_URL and HA_CAMERA in .env, and provide HA_TOKEN as an environment variable');
   process.exit(1);
 }
 
@@ -30,7 +36,7 @@ const call = (msg) => new Promise((resolve, reject) => {
 ws.on('error', (e) => { console.error('cannot connect:', e.message); process.exit(1); });
 ws.on('message', async (raw) => {
   const m = JSON.parse(raw);
-  if (m.type === 'auth_required') return ws.send(JSON.stringify({ type: 'auth', access_token: env.HA_TOKEN }));
+  if (m.type === 'auth_required') return ws.send(JSON.stringify({ type: 'auth', access_token: process.env.HA_TOKEN }));
   if (m.type === 'auth_invalid') { console.error('token rejected:', m.message); process.exit(1); }
   if (m.type === 'result') {
     const p = pending.get(m.id);

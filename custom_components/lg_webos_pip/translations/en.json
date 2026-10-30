@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Show PIP on an LG webOS TV",
-        "description": "Pick the TV (from the LG webOS TV integration). The HA PIP app must be installed on it; see the README.\n\nThe URL and access token are optional. When set, they are sent to the TV app so you don't have to type the token with the remote.",
+        "description": "Pick the TV (from the LG webOS TV integration). The HA PIP app must be installed on it; see the README.\n\nThe URL and access token are optional. If you enter them here, press Send connection to TV once. Ordinary PIP launches do not send the token.",
         "data": {
           "tv": "TV",
           "ha_url": "Home Assistant URL as seen from the TV",

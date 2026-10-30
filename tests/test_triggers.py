@@ -24,8 +24,8 @@ EXPECTED_PIP = {
     "timeout": 30,
     "camera": CAMERA,
     "title": "Front Door",
-    "connect": {"url": "http://10.0.0.2:8123", "token": "secret"},
 }
+EXPECTED_CONNECTION = {"url": "http://10.0.0.2:8123", "token": "secret"}
 
 
 def launched(calls: list[ServiceCall]) -> list[dict]:
@@ -184,7 +184,7 @@ async def test_buttons(hass: HomeAssistant, tv, webos_calls) -> None:
 
     assert launched(webos_calls) == [
         EXPECTED_PIP,
-        {"connect": EXPECTED_PIP["connect"]},
+        {"connect": EXPECTED_CONNECTION},
         {"settings": True},
         {"close": True},
     ]

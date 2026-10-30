@@ -115,8 +115,6 @@ class PipController:
         if (camera := params.get(CONF_CAMERA)) and CONF_TITLE not in params:
             if state := self.hass.states.get(camera):
                 params[CONF_TITLE] = state.name
-        if connection := self._connection():
-            params["connect"] = connection
         return params
 
     async def _launch(self, params: dict[str, Any], *, raise_if_off: bool, screen_off_ok: bool = False) -> None:

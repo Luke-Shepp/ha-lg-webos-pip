@@ -62,22 +62,23 @@ The TV app isn't in the LG Content Store, so it's installed through Developer Mo
 
    If `--getkey` fails, the Key Server toggle is off. It turns itself off again after a reboot.
 
-4. **Install the app.** Download `io.github.idaddycz.lgwebospip_*.ipk` from the [latest release](https://github.com/iDaddyCz/ha-lg-webos-pip/releases/latest), then:
+4. **Build and install the app from this fork.** From the repository root:
 
    ```bash
-   ares-install -d tv io.github.idaddycz.lgwebospip_1.0.0_all.ipk
+   cd webos-app
+   npm ci
+   npm run install-tv
    ```
 
-   Or build it from source: `cd webos-app && npm install && npm run install-tv`.
+   The build rejects `HA_TOKEN` in the environment or `.env`; enter the token after installation.
 
 > **Developer Mode sessions last ~50 hours.** Open the Developer Mode app and press **Extend** now and then, or the TV removes the app when the session expires. A rooted TV with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel) doesn't have this limit.
 
 ### 2. Connect the TV app to Home Assistant
 
-The app needs your HA URL and a long-lived access token. Create the token in HA under **your profile → Security → Long-lived access tokens**. A dedicated non-admin HA user for the TV is a good idea. Then do **one** of the following:
+The app needs your HA URL and a long-lived access token. Create the token in HA under **your profile → Security → Long-lived access tokens**. Use a dedicated non-admin HA user for the TV; its token still has access to more than just the camera. Prefer an HTTPS HA URL reachable by the TV. An `http://` URL sends the token over unencrypted WebSocket traffic on your network. Then do **one** of the following:
 
-- **From Home Assistant (easiest):** enter the URL and token in the integration (step 3). HA sends them to the TV app, and you never type the token with the remote.
-- **On the TV:** open **HA PIP** from the TV's app list. The setup screen appears:
+- **On the TV (recommended):** open **HA PIP** from the TV's app list. The setup screen appears:
 
   | Setting | |
   |---|---|
@@ -89,9 +90,11 @@ The app needs your HA URL and a long-lived access token. Create the token in HA 
 
   Navigate with **▲▼**, change choices with **◀▶**, press **OK** to type in a field or press a button. The Magic Remote pointer also works. Press **Save** before exiting.
 
+- **From Home Assistant:** enter the URL and token in the integration (step 3), then press **Send connection to TV** once. The token is not sent again with ordinary PIP launches.
+
 ### 3. Install the Home Assistant integration
 
-**HACS (recommended):** HACS → ⋮ → **Custom repositories** → add `https://github.com/iDaddyCz/ha-lg-webos-pip` as type **Integration**. Install **LG webOS PIP**, then restart Home Assistant.
+**HACS (recommended):** HACS → ⋮ → **Custom repositories** → add `https://github.com/Luke-Shepp/ha-lg-webos-pip` as type **Integration**. Install **LG webOS PIP**, then restart Home Assistant.
 
 **Manual:** copy `custom_components/lg_webos_pip` to `/config/custom_components/lg_webos_pip`, then restart Home Assistant.
 
@@ -101,7 +104,7 @@ Then go to **Settings → Devices & services → Add integration → LG webOS PI
 |---|---|
 | TV | your LG TV's media player (from the LG webOS TV integration) |
 | Home Assistant URL as seen from the TV | prefilled with your internal URL |
-| Long-lived access token for the TV app | optional; when set, it's sent to the TV app with every launch |
+| Long-lived access token for the TV app | optional; press **Send connection to TV** to transfer it once. Omit this if you entered it on the TV. |
 | Default stream type / position / size / close after | defaults for this TV |
 | TV app ID | leave as is unless you built the app with another ID |
 
@@ -211,7 +214,7 @@ Launching again while the PIP is open swaps the feed and restarts the timer.
 
 - **While the PIP is visible it has the remote's focus.** Arrow keys go to the PIP rather than the app underneath, and **Back** or **OK** close it. Keep timeouts short for popups.
 - If HA or the camera doesn't answer, the PIP shows the error and retries every 3 s until it times out.
-- The token is stored in the TV app's local storage, and in the integration's options if you entered it there.
+- The token is stored in the TV app's local storage, and also in the integration's options if you entered it there. It is not embedded in the IPK or included in ordinary PIP launches.
 
 ## Troubleshooting
 
@@ -219,7 +222,7 @@ Launching again while the PIP is open swaps the feed and restarts the timer.
 |---|---|
 | Nothing happens on a trigger | Check the trigger's **Enabled** switch and that the TV's media player is `on`, then press the trigger's **Test** button. Look in **Settings → System → Logs** for `lg_webos_pip`. |
 | "The LG webOS TV integration is not set up" | Set up HA's LG webOS TV integration and make sure the TV is paired. |
-| PIP shows "Not set up yet" | Enter the URL and token in the integration and press **Send connection to TV**, or use the TV setup screen. |
+| PIP shows "Not set up yet" | Use the TV setup screen, or enter the URL and token in the integration and press **Send connection to TV** once. |
 | "Authentication failed" | The token was deleted or mistyped. Create a new one. |
 | Black box, spinner forever | Try `mode: snapshot`. Check that the TV can reach the HA URL (not `homeassistant.local` unless the TV resolves it). |
 | App vanished from the TV | The Developer Mode session expired. Extend it and reinstall the app. |
@@ -235,7 +238,7 @@ npm run mock                  # then open http://localhost:8124/tv.html
                               #   (no params)                     -> setup screen
 npm run install-tv            # build, package and install on the TV registered as "tv"
 npm run inspect               # Chrome DevTools for the app on the TV
-cp .env.example .env          # optional: bake defaults into your own build (never publish it)
+cp .env.example .env          # optional non-secret build defaults; HA_TOKEN is rejected
 
 # Integration
 python3 -m venv .venv && .venv/bin/pip install -r requirements_test.txt
